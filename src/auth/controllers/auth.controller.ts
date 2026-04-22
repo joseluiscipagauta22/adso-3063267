@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, Post, Request, UseGuards } from '@nestjs/common';
 import { LoginDto } from '../dtos/login.dto';
 import { AuthService } from '../services/auth.service';
 import { JwtAuthGuard } from '../guards/auth.guard';
@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../guards/auth.guard';
 @Controller('auth')
 export class AuthController {
 
-    constructor(private readonly authService: AuthService) {}
+    constructor(private readonly authService: AuthService) { }
 
     @Post('login')
     async login(@Body() body: LoginDto) {
@@ -18,9 +18,12 @@ export class AuthController {
     }
 
     @Get('check-status')
-    @UseGuards(JwtAuthGuard) // Usa el guard de JWT que ya configuraste
+    @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    @Header('Pragma', 'no-cache')
+    @Header('Expires', '0')
+    @UseGuards(JwtAuthGuard)
     checkStatus(@Request() req) {
-    // req.user viene del Payload del JWT
-    return this.authService.checkStatus(req.user); 
+        // req.user viene del Payload del JWT
+        return this.authService.checkStatus(req.user);
     }
 }
