@@ -19,16 +19,6 @@ export class UsersService {
         return await this.userRepo.find({ relations: ['roles'] });
     }
 
-    // async findByEmail(email: string) {
-    //     const user = await this.userRepo.findOne({ where: { email: email } });
-    //     if (!user) {
-    //         throw new NotFoundException(`User ${email} not found`);
-    //     }
-    //     return user;
-    // }
-
-
-
     async findByEmail(email: string) {
         const user = await this.userRepo.findOne({
             where: { email },
@@ -37,7 +27,6 @@ export class UsersService {
                     modules: true,
                 },
             },
-            // relations: ['roles'], //clave
         });
 
         if (!user) {
@@ -54,13 +43,9 @@ export class UsersService {
         if (!user) {
             throw new NotFoundException(`User #${userId} not found`);
         }
-        return user;
+        const { password, ...userData } = user;
+        return userData;
     }
-
-    // createUser(payload: CreateUserDto){
-    //     const newUser = this.userRepo.create(payload);
-    //     return this.userRepo.save(newUser);
-    // }
 
     async create(createUserDto: CreateUserDto) {
         const { roleIds, password, ...userData } = createUserDto;
@@ -92,32 +77,30 @@ export class UsersService {
         // actualizar roles
         if (roleIds) {
             const roles = await this.rolesService.findByIds(roleIds);
-
             if (roles.length !== roleIds.length) {
                 throw new NotFoundException('Some roles were not found');
             }
-
             user.roles = roles;
         }
 
         // actualizar password solo si viene
-        if (password) {
-            user.password = await bcrypt.hash(password, 10);
+        // if (password) {
+        //     user.password = await bcrypt.hash(password, 10);
+        // }
+        if (password && password.trim().length > 0) {
+            // Solo si pasa esta validación, generamos el nuevo hash
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
         }
 
+        console.log('testerEdit', updateUserDto);
+        
         // actualizar resto de datos
-        this.userRepo.merge(user, userData);
-
-        return this.userRepo.save(user);
+        // this.userRepo.merge(user, userData);
+        // const updatedUser = await this.userRepo.save(user);
+        // const { password: _, ...res } = updatedUser;
+        return updateUserDto;
     }
-
-    // async updateUser(id: number, payloadUpdated: UpdateUserDto) {
-    //     const user = await this.userRepo.findOne({ where: { id } });
-    //     if (!user) {
-    //         throw new NotFoundException(`User #${id} not found`);
-    //     }
-    //     this.userRepo.merge(user, payloadUpdated);
-    // }
 
     deleteUser(idUser: number) {
         return this.userRepo.delete(idUser);

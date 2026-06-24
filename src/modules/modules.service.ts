@@ -65,8 +65,30 @@ export class ModulesService {
         return this.moduleRepository.save(module);
     }
 
+    // async remove(id: number) {
+    //     // 1. Buscamos el module incluyendo la relación
+    //     const module = await this.moduleRepository.findOne({
+    //         where: { id }
+    //     });
+
+    //     if (!module) {
+    //         throw new NotFoundException(`Role #${id} not found`);
+    //     }
+
+    //     // // 2. Validamos si el array tiene registros
+    //     // if (role.users && role.users.length > 0) {
+    //     //     throw new BadRequestException(
+    //     //         `No se puede eliminar el rol: hay ${role.users.length} usuario(s) asignados a él.`
+    //     //     );
+    //     // }
+
+    //     // 3. Si está limpio, procedemos a borrar
+    //     return await this.moduleRepository.remove(module);
+    // }
+
     async remove(id: number) {
-        // 1. Buscamos el module incluyendo la relación
+        // const module = await this.findOne(id); // Reutiliza tu findOne que ya lanza la excepción
+
         const module = await this.moduleRepository.findOne({
             where: { id }
         });
@@ -74,16 +96,11 @@ export class ModulesService {
         if (!module) {
             throw new NotFoundException(`Role #${id} not found`);
         }
+        // Al usar delete, se envía un comando directo a SQL
+        // Gracias al onDelete: 'CASCADE' en la entidad, la DB limpiará la relación con los roles
+        await this.moduleRepository.delete(id);
 
-        // // 2. Validamos si el array tiene registros
-        // if (role.users && role.users.length > 0) {
-        //     throw new BadRequestException(
-        //         `No se puede eliminar el rol: hay ${role.users.length} usuario(s) asignados a él.`
-        //     );
-        // }
-
-        // 3. Si está limpio, procedemos a borrar
-        return await this.moduleRepository.remove(module);
+        return { deleted: true, id };
     }
 
 

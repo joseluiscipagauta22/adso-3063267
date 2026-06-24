@@ -1,5 +1,5 @@
 import { Role } from 'src/roles/entities/role.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
 
 @Entity('modules')
 export class ModuleEntity {
@@ -13,6 +13,9 @@ export class ModuleEntity {
   @Column({ nullable: true })
   description: string;
 
-  @ManyToMany(() => Role, role => role.modules)
+  @ManyToMany(() => Role, role => role.modules, {
+    onDelete: 'CASCADE', // Limpieza automática en la tabla intermedia
+  })
+  @JoinTable() // <--- ¡AÑADE ESTO AQUÍ!
   roles: Role[];
 }
