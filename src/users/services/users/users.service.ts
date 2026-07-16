@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { CreateUserDto, UpdateUserDto } from 'src/users/dtos/user.dto';
+import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from 'src/users/dtos/user.dto';
 import { RolesService } from 'src/roles/services/roles.service';
 import * as bcrypt from 'bcrypt';
 
@@ -74,7 +74,6 @@ export class UsersService {
 
         if (!user) throw new NotFoundException('User not found');
 
-        // actualizar roles
         if (roleIds) {
             const roles = await this.rolesService.findByIds(roleIds);
             if (roles.length !== roleIds.length) {
@@ -83,26 +82,47 @@ export class UsersService {
             user.roles = roles;
         }
 
-        // actualizar password solo si viene
-        // if (password) {
-        //     user.password = await bcrypt.hash(password, 10);
-        // }
         if (password && password.trim().length > 0) {
-            // Solo si pasa esta validación, generamos el nuevo hash
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
         }
 
-        console.log('testerEdit', updateUserDto);
-        
-        // actualizar resto de datos
-        // this.userRepo.merge(user, userData);
-        // const updatedUser = await this.userRepo.save(user);
-        // const { password: _, ...res } = updatedUser;
-        return updateUserDto;
+        this.userRepo.merge(user, userData);
+        const updatedUser = await this.userRepo.save(user);
+        const { password: _, ...res } = updatedUser;
+        return res;
     }
 
     deleteUser(idUser: number) {
         return this.userRepo.delete(idUser);
+    }
+
+    async changePassword(id: number, changePasswordDto: ChangePasswordDto): Promise<{ message: string }> {
+        const { currentPassword, newPassword } = changePasswordDto;
+
+        // 1. Buscar al usuario asegurándonos de traer el campo password de la BD
+        // (Ojo: si en tu entidad usas @Column({ select: false }), tendrás que añadir .addSelect('user.password') o cargarlo explícitamente)
+        const user = await this.userRepo.findOne({ where: { id } });
+        if (!user) throw new NotFoundException('User not found');
+
+        // 2. Verificar si la contraseña actual es correcta
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            throw new BadRequestException('La contraseña actual es incorrecta');
+        }
+
+        // 3. Verificar que la nueva contraseña no sea idéntica a la anterior (Buena práctica de seguridad)
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword) {
+            throw new BadRequestException('La nueva contraseña no puede ser igual a la actual');
+        }
+
+        // 4. Encriptar y guardar la nueva contraseña
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        await this.userRepo.save(user);
+
+        return { message: 'Contraseña actualizada exitosamente' };
     }
 }

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsString, IsNotEmpty, IsArray, ArrayNotEmpty, IsInt, IsBoolean } from "class-validator";
+import { IsString, IsNotEmpty, IsArray, ArrayNotEmpty, IsInt, IsBoolean, IsOptional, MinLength } from "class-validator";
 import { PartialType, ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 
@@ -30,7 +30,8 @@ export class CreateUserDto {
     readonly email: string;
 
     @IsString()
-    @IsNotEmpty()
+    // @IsNotEmpty()
+    @IsOptional()
     @ApiProperty()
     readonly password: string;
 
@@ -46,4 +47,16 @@ export class CreateUserDto {
     @ApiProperty({ type: [Number] })
     readonly roleIds: number[];
 }
+
 export class UpdateUserDto extends PartialType(CreateUserDto) { }
+
+export class ChangePasswordDto {
+  @IsString()
+  @IsNotEmpty({ message: 'La contraseña actual es obligatoria' })
+  currentPassword: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'La nueva contraseña es obligatoria' })
+  @MinLength(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' })
+  newPassword: string;
+}
