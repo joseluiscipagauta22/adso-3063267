@@ -18,5 +18,8 @@ export default registerAs('config', () => {
             expiresIn: parseInt(process.env.JWT_EXPIRES_IN ?? '3600', 10)
             // expiresIn: process.env.JWT_EXPIRES_IN,
         },
+        cors: {
+            origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [],
+        },
     }
 });

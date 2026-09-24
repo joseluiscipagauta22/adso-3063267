@@ -9,7 +9,7 @@ import { JwtAuthGuard } from '../../../auth/guards/auth.guard';
 
 @ApiBearerAuth()
 @Modules('users')
-@UseGuards(JwtAuthGuard, ModulesGuard)
+// @UseGuards(JwtAuthGuard, ModulesGuard)
 @Controller('users')
 export class UsersController {
 
